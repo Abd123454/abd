@@ -1,31 +1,51 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
 
-export async function GET() {
-  const session = await getSession()
-  const userId = session?.id || 'default-user'
-
-  let settings = await db.setting.findFirst({ where: { userId } })
-
-  if (!settings) {
-    settings = await db.setting.create({ data: { userId } })
-  }
-
-  return NextResponse.json(settings)
+async function getUserId() {
+  const user = await db.user.findFirst()
+  return user?.id || 'default-user'
 }
 
-export async function PUT(req: Request) {
-  const session = await getSession()
-  const userId = session?.id || 'default-user'
+export async function GET() {
+  try {
+    const userId = await getUserId()
+    
+    let settings = await db.setting.findUnique({
+      where: { userId }
+    })
 
-  const body = await req.json()
+    if (!settings) {
+      // Create default settings if not exists
+      settings = await db.setting.create({
+        data: { userId }
+      })
+    }
 
-  const settings = await db.setting.upsert({
-    where: { userId },
-    create: { userId, ...body },
-    update: body
-  })
+    return NextResponse.json(settings)
+  } catch (error) {
+    console.error('Get settings error:', error)
+    return NextResponse.json({
+      tawjihiDate: '2026-06-15',
+      chinaDate: '2026-09-01',
+      savingsGoal: 26000
+    })
+  }
+}
 
-  return NextResponse.json(settings)
+export async function PUT(req: NextRequest) {
+  try {
+    const userId = await getUserId()
+    const data = await req.json()
+
+    const settings = await db.setting.upsert({
+      where: { userId },
+      update: data,
+      create: { userId, ...data }
+    })
+
+    return NextResponse.json(settings)
+  } catch (error) {
+    console.error('Update settings error:', error)
+    return NextResponse.json({ error: 'حدث خطأ' }, { status: 500 })
+  }
 }

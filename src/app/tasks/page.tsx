@@ -19,9 +19,14 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-  const [newTask, setNewTask] = useState({
+  const [newTask, setNewTask] = useState<{
+    title: string
+    priority: 'low' | 'medium' | 'high' | 'urgent'
+    category: string
+    description: string
+  }>({
     title: '',
-    priority: 'medium' as const,
+    priority: 'medium',
     category: '',
     description: ''
   })

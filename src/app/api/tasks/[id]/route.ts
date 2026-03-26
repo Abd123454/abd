@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+
+async function getUserId() {
+  const user = await db.user.findFirst()
+  return user?.id || 'default'
+}
 
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession()
-  const userId = session?.id || 'default-user'
+  const userId = await getUserId()
   const { id } = await params
 
   await db.task.update({
@@ -22,8 +25,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession()
-  const userId = session?.id || 'default-user'
+  const userId = await getUserId()
   const { id } = await params
 
   const body = await req.json()

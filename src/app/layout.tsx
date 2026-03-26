@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import Providers from '@/components/Providers'
 
 export const metadata: Metadata = {
   title: 'مساري — نظام تشغيل الحياة',
@@ -18,9 +17,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#388BFD" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body>
-        <Providers>{children}</Providers>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }

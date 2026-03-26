@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+
+async function getUserId() {
+  const user = await db.user.findFirst()
+  return user?.id || 'default'
+}
 
 export async function GET() {
-  const session = await getSession()
-  const userId = session?.id || 'default-user'
+  const userId = await getUserId()
 
   const components = await db.aTSComponent.findMany({
     where: { userId },
@@ -15,8 +18,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const session = await getSession()
-  const userId = session?.id || 'default-user'
+  const userId = await getUserId()
 
   const { id, status, notes } = await req.json()
 

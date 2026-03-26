@@ -1,48 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
 
-export async function GET(req: NextRequest) {
-  const session = await getSession()
-  const userId = session?.id || 'default-user'
-
-  const status = new URL(req.url).searchParams.get('status') || 'pending'
-  const where = status === 'all'
-    ? { userId, status: { not: 'deleted' } }
-    : { userId, status }
-
-  const tasks = await db.task.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    take: 50
-  })
-
-  return NextResponse.json(tasks)
+async function getUserId() {
+  const user = await db.user.findFirst()
+  return user?.id || 'default'
 }
 
-export async function POST(req: Request) {
-  const session = await getSession()
-  const userId = session?.id || 'default-user'
+export async function GET(req: NextRequest) {
+  try {
+    const userId = await getUserId()
+    const { searchParams } = new URL(req.url)
+    const status = searchParams.get('status')
 
-  const { title, priority = 'medium', category, dueDate, description } = await req.json()
+    const where: any = { userId }
+    if (status) where.status = status
 
-  if (!title) {
-    return NextResponse.json({ error: 'العنوان مطلوب' }, { status: 400 })
+    const tasks = await db.task.findMany({
+      where,
+      orderBy: { createdAt: 'desc' }
+    })
+
+    return NextResponse.json(tasks)
+  } catch (error) {
+    console.error('Get tasks error:', error)
+    return NextResponse.json([])
   }
+}
 
-  const xpReward = { urgent: 25, high: 20, medium: 15, low: 10 }[priority] || 15
+export async function POST(req: NextRequest) {
+  try {
+    const userId = await getUserId()
+    const data = await req.json()
 
-  const task = await db.task.create({
-    data: {
-      userId,
-      title,
-      priority,
-      category,
-      description,
-      dueDate: dueDate ? new Date(dueDate) : null,
-      xpReward
-    }
-  })
+    const task = await db.task.create({
+      data: {
+        userId,
+        title: data.title,
+        description: data.description || '',
+        priority: data.priority || 'medium',
+        xpReward: data.xpReward || 25,
+        status: 'pending',
+        dueDate: data.dueDate ? new Date(data.dueDate) : null
+      }
+    })
 
-  return NextResponse.json(task)
+    return NextResponse.json(task)
+  } catch (error) {
+    console.error('Create task error:', error)
+    return NextResponse.json({ error: 'حدث خطأ' }, { status: 500 })
+  }
 }
